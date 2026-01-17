@@ -28,7 +28,7 @@ export default function Deviations({ deviations, isLoading }: DeviationsProps) {
             {deviations.map((deviation, idx) => (
               <li
                 key={idx}
-                className="flex gap-3 text-ink-800 font-serif leading-snug text-sm bg-parchment-100/50 p-2 rounded border-l-2 border-accent-gold"
+                className="flex gap-3 text-ink-800 font-serif leading-snug text-sm bg-parchment-100 p-2 rounded border-l-2 border-accent-gold"
               >
                 <AlertTriangle className="w-4 h-4 text-accent-gold shrink-0 mt-0.5" />
                 <span>{deviation}</span>

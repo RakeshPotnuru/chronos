@@ -3,9 +3,12 @@ from google import genai
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 import json
+import os
 import re
+
 from typing import Optional, List
 from google.genai import types
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv(".env.local")
 
@@ -223,6 +226,21 @@ def generate_scenario_audio(request: AudioRequest):
         return AudioResponse(audio=None)
 
 app = FastAPI()
+
+origins = []
+
+client_url = os.getenv("CLIENT_URL")
+if client_url:
+    origins.append(client_url)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(router)
 
 @app.get("/")

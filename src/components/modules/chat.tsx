@@ -35,9 +35,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-[90dvh]">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto py-4 space-y-6">
+      <div className="flex-1 overflow-y-auto py-4 space-y-6 px-4">
         {messages.length === 0 && (
           <div className="text-center mt-20 opacity-60">
             <Feather className="w-16 h-16 mx-auto mb-4 text-accent-gold" />
@@ -74,7 +74,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <div className="absolute bottom-0.5 left-0.5 w-2 h-2 border-b border-l border-ink-900/10"></div>
               <div className="absolute bottom-0.5 right-0.5 w-2 h-2 border-b border-r border-ink-900/10"></div>
             </div>
-            <span className="text-xs text-ink-600 mt-1 font-sans uppercase tracking-wider opacity-70">
+            <span className="text-xs text-parchment-200 mt-1 font-sans font-bold uppercase tracking-wider opacity-70">
               {msg.role === "user"
                 ? "Divergence Point"
                 : "Historian Simulation"}

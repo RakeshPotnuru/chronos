@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 
+import { axios } from "@/lib/axios-client";
+import { cn } from "@/lib/utils";
 import {
   AudioResponse,
   ChatMessage,
@@ -13,7 +15,6 @@ import {
   WorldState,
 } from "@/types";
 import { base64ToUint8Array, playPCM } from "@/utils/audio";
-import axios from "axios";
 import {
   BookOpen,
   ChevronLeftIcon,
@@ -252,7 +253,7 @@ export default function App() {
 
     try {
       const turn = (
-        await axios.post<SimulationResponse>("/api/simulate-turn", {
+        await axios.post<SimulationResponse>("/simulate-turn", {
           input: text,
           history: [...messages, newUserMsg],
           current_state: worldState,
@@ -284,12 +285,10 @@ export default function App() {
 
       setIsGeneratingImage(true);
       axios
-        .post<ImageResponse>("/api/generate-image", {
+        .post<ImageResponse>("/generate-image", {
           scenario_description: turn.narrative,
         })
         .then(({ data }) => {
-          console.log(data);
-
           if (data.image) setBackgroundImage(data.image);
         })
         .catch((e) => console.error(e))
@@ -297,12 +296,10 @@ export default function App() {
 
       setIsGeneratingAudio(true);
       axios
-        .post<AudioResponse>("/api/generate-audio", {
+        .post<AudioResponse>("/generate-audio", {
           narrative: turn.narrative,
         })
         .then(({ data }) => {
-          console.log(data);
-
           if (data.audio) playAudio(data.audio);
         })
         .catch((e) => console.error(e))
@@ -339,7 +336,7 @@ export default function App() {
         }}
       >
         {/* Top Decoration */}
-        <div className="h-8 w-full relative overflow-hidden z-20 shadow-inner">
+        <div className="h-8 w-full relative overflow-hidden z-20 shadow-inner bg-linear-to-b from-ink-900 via-ink-800 to-transparent">
           <div
             className={`absolute inset-0 flex transition-transform duration-2000 ease-out ${rulerAnimating ? "animate-ruler-spin" : ""}`}
             style={{
@@ -398,7 +395,7 @@ export default function App() {
         </div>
 
         {/* Header */}
-        <header className="bg-transparent p-4 pb-6 flex items-center justify-between z-10">
+        <header className="bg-transparent p-4 flex items-center justify-between z-10">
           {/* Sidebar Trigger */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -411,13 +408,18 @@ export default function App() {
             )}
           </button>
 
-          <div className="absolute left-1/2 -translate-x-1/2 top-6">
+          <div
+            className={cn("absolute left-1/2 -translate-x-1/2", {
+              "top-10": !worldState,
+              "top-6": worldState,
+            })}
+          >
             {worldState ? (
               <YearOdometer value={worldState.year} />
             ) : (
-              <div className="flex flex-col items-center opacity-40">
-                <Timer className="w-6 h-6 text-ink-900 mb-1" />
-                <span className="text-[10px] text-ink-600 uppercase tracking-widest font-bold">
+              <div className="flex flex-col items-center opacity-40 text-parchment-100">
+                <Timer className="w-6 h-6 mb-1" />
+                <span className="text-[10px] uppercase tracking-widest font-bold">
                   Awaiting Divergence
                 </span>
               </div>
@@ -455,12 +457,12 @@ export default function App() {
 
         {/* Content */}
         <div className="flex flex-row overflow-hidden relative z-0">
-          {/* <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-1 bg-ink-800/10 z-10 transform -translate-x-1/2 border-x border-dashed border-ink-800/20"></div> */}
           <section
             className={`w-1/5 p-6 md:pl-10 min-w-0 overflow-hidden flex flex-col transition-colors duration-1000`}
           >
             <Stats state={worldState} isLoading={isLoading} />
           </section>
+
           <section
             className={`w-[55%] md:pl-10 flex-1 flex flex-col min-w-0 border-r border-ink-800/10 transition-colors duration-1000`}
           >
