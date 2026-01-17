@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 from google import genai
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
@@ -9,7 +9,7 @@ from google.genai import types
 
 load_dotenv(".env.local")
 
-app = FastAPI()
+router = APIRouter(prefix="/api")
 
 SIMULATION_MODEL = "gemini-3-flash-preview"
 IMAGE_MODEL = "gemini-3-pro-image-preview"
@@ -49,8 +49,8 @@ class SimulationResponse(BaseModel):
     suggested_actions: List[str]
 
 # API Endpoints
-@app.post("/simulate-turn", response_model=SimulationResponse)
-async def simulate_turn(request: SimulationRequest):
+@router.post("/simulate-turn", response_model=SimulationResponse)
+def simulate_turn(request: SimulationRequest):
     """
     Simulate an alternative history turn based on user input
     """
@@ -125,8 +125,11 @@ async def simulate_turn(request: SimulationRequest):
 class ImageRequest(BaseModel):
     scenario_description: str
 
-@app.post("/generate-image")
-async def generate_scenario_image(request: ImageRequest):
+class ImageResponse(BaseModel):
+    image: str | None = None
+
+@router.post("/generate-image")
+def generate_scenario_image(request: ImageRequest):
     """
     Generate a historical illustration based on scenario description
     """
@@ -154,20 +157,23 @@ async def generate_scenario_image(request: ImageRequest):
                         import base64
                         image_data = base64.b64encode(part.inline_data.data).decode('utf-8')
                         mime_type = part.inline_data.mime_type
-                        return {"image": f"data:{mime_type};base64,{image_data}"}
+                        return ImageResponse(image=f"data:{mime_type};base64,{image_data}")
         
-        return {"image": None}
+        return ImageResponse(image=None)
 
     except Exception as e:
         print(f"Image generation failed: {e}")
-        return {"image": None}
+        return ImageResponse(image=None)
 
 
 class AudioRequest(BaseModel):
     narrative: str
 
-@app.post("/generate-audio")
-async def generate_scenario_audio(request: AudioRequest):
+class AudioResponse(BaseModel):
+    audio: str | None = None
+
+@router.post("/generate-audio")
+def generate_scenario_audio(request: AudioRequest):
     """
     Generate atmospheric audio narration for a historical scene
     """
@@ -208,16 +214,18 @@ async def generate_scenario_audio(request: AudioRequest):
                         import base64
                         audio_data = base64.b64encode(part.inline_data.data).decode('utf-8')
                         mime_type = part.inline_data.mime_type
-                        return {"audio": f"data:{mime_type};base64,{audio_data}"}
+                        return AudioResponse(audio=f"data:{mime_type};base64,{audio_data}")
         
-        return {"audio": None}
+        return AudioResponse(audio=None)
 
     except Exception as e:
         print(f"Audio generation failed: {e}")
-        return {"audio": None}
+        return AudioResponse(audio=None)
 
+app = FastAPI()
+app.include_router(router)
 
 @app.get("/")
-async def root():
+def root():
     """Health check endpoint"""
     return {"status": "Simulator API is running"}
