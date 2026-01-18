@@ -269,7 +269,7 @@ export default function App() {
       if (!worldState || turn.world_state_update.year !== worldState.year) {
         setRulerAnimating(true);
         playTickSound();
-        setTimeout(() => setRulerAnimating(false), 2000);
+        setTimeout(() => setRulerAnimating(false), 800);
       }
 
       setMessages((prev) => [...prev, newAiMsg]);
@@ -283,17 +283,6 @@ export default function App() {
         },
       ]);
 
-      setIsGeneratingImage(true);
-      axios
-        .post<ImageResponse>("/generate-image", {
-          scenario_description: turn.narrative,
-        })
-        .then(({ data }) => {
-          if (data.image) setBackgroundImage(data.image);
-        })
-        .catch((e) => console.error(e))
-        .finally(() => setIsGeneratingImage(false));
-
       setIsGeneratingAudio(true);
       axios
         .post<AudioResponse>("/generate-audio", {
@@ -304,6 +293,20 @@ export default function App() {
         })
         .catch((e) => console.error(e))
         .finally(() => setIsGeneratingAudio(false));
+
+      setIsGeneratingImage(true);
+      axios
+        .post<ImageResponse>("/generate-image", {
+          scenario_description: turn.narrative,
+        })
+        .then(({ data }) => {
+          if (data.image) {
+            setBackgroundImage(data.image);
+            showNotification("World scenario updated");
+          }
+        })
+        .catch((e) => console.error(e))
+        .finally(() => setIsGeneratingImage(false));
     } catch (err) {
       console.error(err);
       setError("Temporal sync failed. Try again.");
@@ -336,18 +339,16 @@ export default function App() {
         }}
       >
         {/* Top Decoration */}
-        <div className="h-8 w-full relative overflow-hidden z-20 shadow-inner bg-linear-to-b from-ink-900 via-ink-800 to-transparent">
+        <div className="h-12 w-full relative overflow-hidden bg-linear-to-b from-ink-900 via-ink-800 to-transparent z-20 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)]">
           <div
             className={`absolute inset-0 flex transition-transform duration-2000 ease-out ${rulerAnimating ? "animate-ruler-spin" : ""}`}
             style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='50' height='32' viewBox='0 0 50 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0' y='0' width='1' height='8' fill='%23c5a059' opacity='0.5'/%3E%3Crect x='10' y='0' width='1' height='8' fill='%23c5a059' opacity='0.5'/%3E%3Crect x='20' y='0' width='1' height='8' fill='%23c5a059' opacity='0.5'/%3E%3Crect x='30' y='0' width='1' height='8' fill='%23c5a059' opacity='0.5'/%3E%3Crect x='40' y='0' width='2' height='16' fill='%23c5a059'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='50' height='48' viewBox='0 0 50 48' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='10' y='0' width='1' height='10' fill='%23c5a059' opacity='0.4'/%3E%3Crect x='20' y='0' width='1' height='10' fill='%23c5a059' opacity='0.4'/%3E%3Crect x='30' y='0' width='1' height='10' fill='%23c5a059' opacity='0.4'/%3E%3Crect x='40' y='0' width='1' height='10' fill='%23c5a059' opacity='0.4'/%3E%3Crect x='0' y='0' width='2' height='22' fill='%23c5a059'/%3E%3C/svg%3E")`,
               backgroundRepeat: "repeat-x",
-              backgroundSize: "50px 32px",
+              backgroundSize: "50px 48px",
               width: "200%",
             }}
           />
-
-          {/* Central Arrow Indicator */}
           <div className="absolute left-1/2 top-0 -translate-x-1/2 z-30 pointer-events-none h-full flex flex-col items-center">
             <svg
               width="40"
@@ -357,41 +358,35 @@ export default function App() {
               xmlns="http://www.w3.org/2000/svg"
               className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
             >
-              {/* Needle Body */}
               <path
                 d="M20 42V4M20 42L12 30M20 42L28 30"
                 stroke="#c5a059"
-                strokeWidth="3.5"
+                strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-              {/* Ornate Arrowhead Base */}
               <path
                 d="M10 28C10 28 14 32 20 32C26 32 30 28 30 28"
                 stroke="#c5a059"
-                strokeWidth="2.5"
+                strokeWidth="1.5"
                 opacity="0.8"
               />
-              {/* Central Diamond detail */}
               <path
                 d="M20 12L17 18L20 24L23 18L20 12Z"
                 fill="#c5a059"
                 stroke="#1a1614"
-                strokeWidth="1.5"
+                strokeWidth="0.5"
               />
-              {/* Top mount */}
               <circle
                 cx="20"
                 cy="4"
                 r="3"
                 fill="#c5a059"
                 stroke="#1a1614"
-                strokeWidth="1.5"
+                strokeWidth="1"
               />
             </svg>
           </div>
-
-          <div className="absolute inset-0 bg-linear-to-b from-ink-900 via-ink-800 to-transparent pointer-events-none opacity-70" />
         </div>
 
         {/* Header */}
@@ -411,7 +406,7 @@ export default function App() {
           <div
             className={cn("absolute left-1/2 -translate-x-1/2", {
               "top-10": !worldState,
-              "top-6": worldState,
+              "top-8": worldState,
             })}
           >
             {worldState ? (
