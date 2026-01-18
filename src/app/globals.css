@@ -142,8 +142,7 @@
 
 @layer base {
   body {
-    @apply font-serif;
-    background-color: #1a1614;
+    @apply font-serif bg-parchment-200;
   }
   /* Custom scrollbar for that retro feel */
   ::-webkit-scrollbar {

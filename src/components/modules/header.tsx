@@ -55,7 +55,7 @@ export default function Header({
         {worldState ? (
           <YearOdometer value={worldState.year} />
         ) : (
-          <div className="flex flex-col items-center opacity-40 text-parchment-100">
+          <div className="flex flex-col items-center opacity-40 text-ink-900">
             <Timer className="w-6 h-6 mb-1" />
             <span className="text-[10px] uppercase tracking-widest font-bold">
               Awaiting Divergence
@@ -67,13 +67,13 @@ export default function Header({
       <div className="flex items-center gap-4">
         <div className="flex flex-col items-start gap-1">
           {isGeneratingImage && (
-            <div className="flex items-center gap-2 text-xs text-parchment-100 animate-pulse">
+            <div className="flex items-center gap-2 text-xs text-ink-900 animate-pulse">
               <ImageIcon className="w-3 h-3" />
               <span>Visualizing...</span>
             </div>
           )}
           {isGeneratingAudio && (
-            <div className="flex items-center gap-2 text-xs text-parchment-100 animate-pulse">
+            <div className="flex items-center gap-2 text-xs text-ink-900 animate-pulse">
               <Volume2 className="w-3 h-3" />
               <span>Narrating...</span>
             </div>

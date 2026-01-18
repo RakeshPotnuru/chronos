@@ -178,84 +178,84 @@ export default function App() {
   };
 
   const handleSendMessage = async (text: string) => {
-    // const newUserMsg: ChatMessage = {
-    //   id: Date.now().toString(),
-    //   role: "user",
-    //   content: text,
-    //   timestamp: new Date(),
-    // };
+    const newUserMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: "user",
+      content: text,
+      timestamp: new Date(),
+    };
 
-    // setMessages((prev) => [...prev, newUserMsg]);
-    // setIsLoading(true);
-    // setSuggestedActions([]);
-    // setError(null);
-    // stopAudio(audioSourceRef);
+    setMessages((prev) => [...prev, newUserMsg]);
+    setIsLoading(true);
+    setSuggestedActions([]);
+    setError(null);
+    stopAudio(audioSourceRef);
 
     try {
-      // const turn = (
-      //   await axios.post<SimulationResponse>("/simulate-turn", {
-      //     input: text,
-      //     history: [...messages, newUserMsg],
-      //     current_state: worldState,
-      //   })
-      // ).data;
-      // const newAiMsg: ChatMessage = {
-      //   id: (Date.now() + 1).toString(),
-      //   role: "ai",
-      //   content: turn.narrative,
-      //   timestamp: new Date(),
-      // };
+      const turn = (
+        await axios.post<SimulationResponse>("/simulate-turn", {
+          input: text,
+          history: [...messages, newUserMsg],
+          current_state: worldState,
+        })
+      ).data;
+      const newAiMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "ai",
+        content: turn.narrative,
+        timestamp: new Date(),
+      };
 
-      // if (!worldState || turn.world_state_update.year !== worldState.year) {
-      setRulerAnimating(true);
-      playTickSound({
-        audioContextRef,
-        audioEnabled,
-      });
-      setTimeout(() => setRulerAnimating(false), 2000);
-      // }
+      if (!worldState || turn.world_state_update.year !== worldState.year) {
+        setRulerAnimating(true);
+        playTickSound({
+          audioContextRef,
+          audioEnabled,
+        });
+        setTimeout(() => setRulerAnimating(false), 2000);
+      }
 
-      // setMessages((prev) => [...prev, newAiMsg]);
-      // setWorldState(turn.world_state_update);
-      // setSuggestedActions(turn.suggested_actions);
-      // setHistoryPoints((prev) => [
-      //   ...prev,
-      //   {
-      //     year: turn.world_state_update.year,
-      //     chaos: turn.world_state_update.chaos_level,
-      //   },
-      // ]);
+      setMessages((prev) => [...prev, newAiMsg]);
+      setWorldState(turn.world_state_update);
+      setSuggestedActions(turn.suggested_actions);
+      setHistoryPoints((prev) => [
+        ...prev,
+        {
+          year: turn.world_state_update.year,
+          chaos: turn.world_state_update.chaos_level,
+        },
+      ]);
 
-      // setIsGeneratingAudio(true);
-      // axios
-      //   .post<AudioResponse>("/generate-audio", {
-      //     narrative: turn.narrative,
-      //   })
-      //   .then(({ data }) => {
-      //     if (data.audio)
-      //       playAudio({
-      //         audioContextRef,
-      //         audioEnabled,
-      //         base64Data: data.audio,
-      //         audioSourceRef,
-      //       });
-      //   })
-      //   .catch((e) => console.error(e))
-      //   .finally(() => setIsGeneratingAudio(false));
+      setIsGeneratingAudio(true);
+      axios
+        .post<AudioResponse>("/generate-audio", {
+          narrative: turn.narrative,
+        })
+        .then(({ data }) => {
+          if (data.audio)
+            playAudio({
+              audioContextRef,
+              audioEnabled,
+              base64Data: data.audio,
+              audioSourceRef,
+            });
+        })
+        .catch((e) => console.error(e))
+        .finally(() => setIsGeneratingAudio(false));
 
-      // setIsGeneratingImage(true);
-      // axios
-      //   .post<ImageResponse>("/generate-image", {
-      //     scenario_description: turn.narrative,
-      //   })
-      //   .then(({ data }) => {
-      //     if (data.image) {
-      //       setBackgroundImage(data.image);
-      //       showNotification("World scenario updated");
-      //     }
-      //   })
-      //   .catch((e) => console.error(e))
-      //   .finally(() => setIsGeneratingImage(false));
+      setIsGeneratingImage(true);
+      axios
+        .post<ImageResponse>("/generate-image", {
+          scenario_description: turn.narrative,
+        })
+        .then(({ data }) => {
+          if (data.image) {
+            setBackgroundImage(data.image);
+            showNotification("World scenario updated");
+          }
+        })
+        .catch((e) => console.error(e))
+        .finally(() => setIsGeneratingImage(false));
     } catch (err) {
       console.error(err);
       setError("Temporal sync failed. Try again.");
@@ -311,7 +311,7 @@ export default function App() {
           </section>
 
           <section
-            className={`w-[55%] md:pl-10 flex-1 flex flex-col min-w-0 border-r border-ink-800/10 transition-colors duration-1000`}
+            className={`w-[55%] md:pl-10 flex-1 flex flex-col min-w-0 transition-colors duration-1000`}
           >
             <ChatInterface
               messages={messages}

@@ -40,11 +40,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="flex-1 overflow-y-auto py-4 space-y-6 px-4">
         {messages.length === 0 && (
           <div className="text-center mt-20 opacity-60">
-            <Feather className="w-16 h-16 mx-auto mb-4 text-accent-gold" />
-            <p className="font-serif text-xl text-accent-gold">
+            <Feather className="w-16 h-16 mx-auto mb-4 text-ink-600" />
+            <p className="font-serif text-xl text-ink-800">
               Where shall the thread of history break?
             </p>
-            <p className="text-accent-gold text-sm mt-2">
+            <p className="text-ink-600 text-sm mt-2">
               Example: &quot;The Titanic spots the iceberg early.&quot;
             </p>
           </div>
