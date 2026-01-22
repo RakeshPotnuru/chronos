@@ -1,12 +1,3 @@
-import sys
-from pathlib import Path
-
-# Add project root to sys.path to support absolute 'api.' imports
-# when running the file directly.
-root_path = Path(__file__).resolve().parent.parent
-if str(root_path) not in sys.path:
-    sys.path.insert(0, str(root_path))
-
 from api.config import settings
 from fastapi import FastAPI, APIRouter
 from dotenv import load_dotenv
@@ -43,7 +34,3 @@ app.include_router(router)
 def root():
     """Health check endpoint"""
     return {"status": "Chronos API is running"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("api.main:app", host="127.0.0.1", port=settings.PORT, log_level="info", reload=True)
