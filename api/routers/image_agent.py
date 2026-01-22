@@ -24,7 +24,7 @@ def generate_scenario_image(request: ImageRequest):
             model=settings.IMAGE_MODEL,
             contents=types.Content(
                 parts=[types.Part.from_text(text=prompt)]
-            )
+            ),
         )
 
         # Extract image data

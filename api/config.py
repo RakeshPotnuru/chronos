@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -6,5 +7,6 @@ class Settings(BaseSettings):
     AUDIO_MODEL: str = "gemini-2.5-flash-preview-tts"
 
     PROJECT_NAME: str = "Chronos API"
+    PORT: int = int(os.getenv("PORT", default=8000))
 
 settings = Settings()
