@@ -6,10 +6,27 @@ export interface WorldState {
   geopolitical_stability: number; // 0-100
 }
 
+export type AdvisorRole =
+  | "economist"
+  | "military"
+  | "diplomat"
+  | "public_sentiment";
+
+export interface AdvisorOpinion {
+  advisor: AdvisorRole;
+  intervention: string;
+  reasoning: string;
+  risk_assessment: string;
+  confidence: number; // 0-100
+}
+
 export interface SimulationTurn {
   narrative: string;
   world_state_update: WorldState;
   suggested_actions: string[];
+  cabinet_debate: AdvisorOpinion[];
+  selected_intervention: string;
+  decision_rationale: string;
 }
 
 export interface ChatMessage {
@@ -38,12 +55,18 @@ export interface SimulationSession {
   history_points: HistoryPoint[];
   suggested_actions: string[];
   background_image: string | null;
+  cabinet_debate?: AdvisorOpinion[];
+  selected_intervention?: string | null;
+  decision_rationale?: string | null;
 }
 
 export interface SimulationResponse {
   narrative: string;
   world_state_update: WorldState;
   suggested_actions: string[];
+  cabinet_debate: AdvisorOpinion[];
+  selected_intervention: string;
+  decision_rationale: string;
 }
 
 export interface ImageResponse {

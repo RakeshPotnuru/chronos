@@ -1,12 +1,24 @@
-import { ChatMessage } from "@/types";
+import { AdvisorOpinion, ChatMessage } from "@/types";
 import { Clock, Feather, Send } from "lucide-react";
 import React, { useEffect, useRef } from "react";
+import Markdown from "react-markdown";
 
 interface ChatInterfaceProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
   isLoading: boolean;
   suggestedActions: string[];
+  cabinetDebate: AdvisorOpinion[];
+  selectedIntervention: string | null;
+  decisionRationale: string | null;
+  streamPhase: string | null;
+  streamThoughts: string[];
+  thoughtSignatures: string[];
+  streamNarrative: string;
+  showThoughtProcess: boolean;
+  postThoughts: string[];
+  postThoughtSignatures: string[];
+  onToggleThoughtProcess: () => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -14,9 +26,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSendMessage,
   isLoading,
   suggestedActions,
+  cabinetDebate,
+  selectedIntervention,
+  decisionRationale,
+  streamPhase,
+  streamThoughts,
+  thoughtSignatures,
+  streamNarrative,
+  showThoughtProcess,
+  postThoughts,
+  postThoughtSignatures,
+  onToggleThoughtProcess,
 }) => {
   const [inputText, setInputText] = React.useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const advisorLabel: Record<AdvisorOpinion["advisor"], string> = {
+    economist: "Economist",
+    military: "Military",
+    diplomat: "Diplomat",
+    public_sentiment: "Public Sentiment",
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -24,7 +53,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, suggestedActions]);
+  }, [
+    messages,
+    suggestedActions,
+    cabinetDebate,
+    selectedIntervention,
+    streamThoughts,
+    streamNarrative,
+  ]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,13 +119,227 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         ))}
 
         {isLoading && (
-          <div className="flex items-start mr-auto max-w-[80%]">
-            <div className="bg-parchment-100 px-6 py-4 rounded-sm shadow-sm border border-parchment-800/20 flex gap-2 items-center">
-              <Clock className="animate-spin w-5 h-5 text-ink-600" />
-              <span className="font-serif italic text-ink-600">
-                Consulting the archives...
-              </span>
+          <div className="flex items-start mr-auto max-w-[92%]">
+            <div className="bg-parchment-100/95 border border-ink-800/20 rounded-sm p-4 shadow-md w-full space-y-4 animate-fade-in">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full border border-ink-800/20 bg-parchment-200/70 flex items-center justify-center thinking-glow">
+                    <Clock className="w-4 h-4 text-ink-700 animate-spin" />
+                  </div>
+                  <div>
+                    <p className="font-display text-xs uppercase tracking-[0.2em] text-ink-800/80">
+                      Chronicle Engine
+                    </p>
+                    <p className="font-serif text-sm text-ink-700 italic">
+                      {streamPhase ||
+                        "Analyzing divergences and council feedback..."}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-sans uppercase tracking-wide text-ink-700/70">
+                  Live Deliberation
+                </span>
+              </div>
+
+              <div className="h-2 rounded-full bg-parchment-300/70 overflow-hidden border border-ink-900/10">
+                <div className="h-full w-2/3 thinking-shimmer" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {["Economist", "Military", "Diplomat", "Public Sentiment"].map(
+                  (label, idx) => (
+                    <div
+                      key={label}
+                      className={`rounded-sm border border-ink-900/10 bg-white/60 p-3 ${
+                        idx % 2 === 0
+                          ? "animate-[drift_3.5s_ease-in-out_infinite]"
+                          : "animate-[drift_4.2s_ease-in-out_infinite]"
+                      }`}
+                    >
+                      <p className="font-sans text-[10px] uppercase tracking-[0.18em] text-ink-700/80">
+                        {label}
+                      </p>
+                      <div className="mt-2 space-y-2">
+                        <div className="h-2 rounded-full thinking-shimmer" />
+                        <div className="h-2 w-5/6 rounded-full thinking-shimmer" />
+                        <div className="h-2 w-2/3 rounded-full thinking-shimmer" />
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+
+              {streamThoughts.length > 0 && (
+                <div className="rounded-sm border border-ink-900/10 bg-white/70 p-3 space-y-2">
+                  <p className="font-sans text-[10px] uppercase tracking-[0.18em] text-ink-700/80">
+                    Thinking Summary
+                  </p>
+                  <div className="space-y-2 max-h-28 overflow-auto custom-scrollbar pr-1">
+                    {streamThoughts.map((thought, idx) => (
+                      <p
+                        key={`${thought.slice(0, 16)}-${idx}`}
+                        className="font-serif text-xs text-ink-800/90 leading-relaxed"
+                      >
+                        {thought}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {thoughtSignatures.length > 0 && (
+                <div className="rounded-sm border border-accent-gold/30 bg-accent-gold/10 p-3">
+                  <p className="font-sans text-[10px] uppercase tracking-[0.18em] text-ink-700/80 mb-2">
+                    Thought Signatures
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {thoughtSignatures.map((signature) => (
+                      <code
+                        key={signature}
+                        className="text-[10px] px-2 py-1 rounded bg-ink-900/90 text-parchment-100 max-w-[160px] truncate"
+                        title={signature}
+                      >
+                        {signature}
+                      </code>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {streamNarrative.trim().length > 0 && (
+                <div className="rounded-sm border border-ink-900/10 bg-parchment-200/80 p-3">
+                  <p className="font-sans text-[10px] uppercase tracking-[0.18em] text-ink-700/80 mb-2">
+                    Streaming Response
+                  </p>
+                  <p className="font-serif text-sm text-ink-900 whitespace-pre-wrap">
+                    {streamNarrative}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 text-xs text-ink-700/80 font-sans uppercase tracking-wide">
+                <span className="h-2 w-2 rounded-full bg-accent-gold animate-pulse" />
+                Cross-checking historical counterfactuals
+              </div>
             </div>
+          </div>
+        )}
+
+        {!isLoading && cabinetDebate.length > 0 && (
+          <div className="bg-parchment-100/95 border border-ink-800/20 rounded-sm p-4 space-y-3 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-sm tracking-widest uppercase text-ink-900">
+                Cabinet of Advisors
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-sans uppercase text-ink-700/70 tracking-wide">
+                  Deliberation
+                </span>
+                {(postThoughts.length > 0 ||
+                  postThoughtSignatures.length > 0) && (
+                  <button
+                    type="button"
+                    onClick={onToggleThoughtProcess}
+                    className="text-[10px] px-2 py-1 rounded border border-ink-900/15 bg-white/70 hover:bg-white font-sans uppercase tracking-wide text-ink-800"
+                  >
+                    {showThoughtProcess ? "Hide Thoughts" : "Show Thoughts"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {showThoughtProcess &&
+              (postThoughts.length > 0 || postThoughtSignatures.length > 0) && (
+                <div className="space-y-2 pt-1">
+                  {postThoughts.length > 0 && (
+                    <div className="rounded-sm border border-ink-900/10 bg-white/70 p-3 space-y-2">
+                      <p className="font-sans text-[10px] uppercase tracking-[0.18em] text-ink-700/80">
+                        Thought Summary
+                      </p>
+                      <div className="space-y-2 max-h-28 overflow-auto custom-scrollbar pr-1">
+                        {postThoughts.map((thought, idx) => (
+                          <Markdown
+                            key={`${thought.slice(0, 16)}-post-${idx}`}
+                            // className="font-serif text-xs text-ink-800/90 leading-relaxed"
+                          >
+                            {thought}
+                          </Markdown>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* {postThoughtSignatures.length > 0 && (
+                    <div className="rounded-sm border border-accent-gold/30 bg-accent-gold/10 p-3">
+                      <p className="font-sans text-[10px] uppercase tracking-[0.18em] text-ink-700/80 mb-2">
+                        Thought Signatures
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {postThoughtSignatures.map((signature) => (
+                          <code
+                            key={`post-${signature}`}
+                            className="text-[10px] px-2 py-1 rounded bg-ink-900/90 text-parchment-100 max-w-[160px] truncate"
+                            title={signature}
+                          >
+                            {signature}
+                          </code>
+                        ))}
+                      </div>
+                    </div>
+                  )} */}
+                </div>
+              )}
+
+            <div className="space-y-2">
+              {cabinetDebate.map((entry, idx) => {
+                const isSelected =
+                  entry.intervention.trim().toLowerCase() ===
+                  (selectedIntervention ?? "").trim().toLowerCase();
+
+                return (
+                  <article
+                    key={`${entry.advisor}-${idx}`}
+                    className={`p-3 rounded-sm border ${
+                      isSelected
+                        ? "bg-accent-gold/10 border-accent-gold/40"
+                        : "bg-white/60 border-ink-900/10"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-sans text-xs uppercase tracking-wide text-ink-800/80 font-bold">
+                        {advisorLabel[entry.advisor]}
+                      </p>
+                      <p className="font-sans text-xs text-ink-700/70">
+                        Confidence: {entry.confidence}%
+                      </p>
+                    </div>
+                    <p className="font-serif text-ink-900 mt-1">
+                      {entry.intervention}
+                    </p>
+                    <p className="font-serif text-sm text-ink-700 mt-1">
+                      {entry.reasoning}
+                    </p>
+                    <p className="font-serif text-xs text-ink-700/80 mt-2 italic">
+                      Risk: {entry.risk_assessment}
+                    </p>
+                  </article>
+                );
+              })}
+            </div>
+
+            {selectedIntervention && (
+              <div className="bg-ink-900/90 text-parchment-100 p-3 rounded-sm border border-ink-950 shadow-sm">
+                <p className="font-sans text-xs tracking-wide uppercase text-accent-gold">
+                  Chosen Intervention
+                </p>
+                <p className="font-serif mt-1">{selectedIntervention}</p>
+                {decisionRationale && (
+                  <p className="font-serif text-sm text-parchment-200/90 mt-2">
+                    {decisionRationale}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 

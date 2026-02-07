@@ -183,3 +183,37 @@
     transform: translateX(-200px);
   }
 }
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.thinking-shimmer {
+  background-image: linear-gradient(
+    110deg,
+    rgba(230, 213, 184, 0.45) 10%,
+    rgba(255, 255, 255, 0.9) 25%,
+    rgba(230, 213, 184, 0.45) 45%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.4s ease-in-out infinite;
+}
+
+.thinking-glow {
+  box-shadow: 0 0 12px rgba(197, 160, 89, 0.25);
+}
