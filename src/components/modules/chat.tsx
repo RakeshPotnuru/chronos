@@ -19,6 +19,7 @@ interface ChatInterfaceProps {
   postThoughts: string[];
   postThoughtSignatures: string[];
   onToggleThoughtProcess: () => void;
+  onVisibleMessageIdChange?: (id: string) => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -37,9 +38,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   postThoughts,
   postThoughtSignatures,
   onToggleThoughtProcess,
+  onVisibleMessageIdChange,
 }) => {
   const [inputText, setInputText] = React.useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const visibilityMap = useRef<Map<string, number>>(new Map());
+
   const advisorLabel: Record<AdvisorOpinion["advisor"], string> = {
     economist: "Economist",
     military: "Military",
@@ -53,14 +59,52 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [
-    messages,
-    suggestedActions,
-    cabinetDebate,
-    selectedIntervention,
-    streamThoughts,
-    streamNarrative,
-  ]);
+  }, [messages.length]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages.length, suggestedActions, cabinetDebate, selectedIntervention]);
+
+  useEffect(() => {
+    if (!onVisibleMessageIdChange) return;
+
+    const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        const id = entry.target.getAttribute("data-message-id");
+        if (id) {
+          visibilityMap.current.set(id, entry.intersectionRatio);
+        }
+      });
+
+      let maxRatio = 0;
+      let bestId = null;
+      for (const [id, ratio] of visibilityMap.current.entries()) {
+        if (ratio > maxRatio) {
+          maxRatio = ratio;
+          bestId = id;
+        }
+      }
+
+      if (bestId && maxRatio > 0.1) {
+        // Threshold
+        onVisibleMessageIdChange(bestId);
+      }
+    };
+
+    observerRef.current = new IntersectionObserver(handleIntersection, {
+      root: containerRef.current,
+      threshold: [0, 0.25, 0.5, 0.75, 1.0],
+    });
+
+    // Observe all message elements
+    const messageElements =
+      containerRef.current?.querySelectorAll("[data-message-id]");
+    messageElements?.forEach((el) => observerRef.current?.observe(el));
+
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, [messages, onVisibleMessageIdChange]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +117,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return (
     <div className="flex flex-col h-[90dvh]">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto py-4 space-y-6 px-4">
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-y-auto py-4 space-y-6 px-4"
+      >
         {messages.length === 0 && (
           <div className="text-center mt-20 opacity-60">
             <Feather className="w-16 h-16 mx-auto mb-4 text-ink-600" />
@@ -89,6 +136,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {messages.map((msg) => (
           <div
             key={msg.id}
+            data-message-id={msg.id}
             className={`flex flex-col max-w-[90%] ${
               msg.role === "user" ? "ml-auto items-end" : "mr-auto items-start"
             }`}
@@ -187,7 +235,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
               )}
 
-              {thoughtSignatures.length > 0 && (
+              {/* {thoughtSignatures.length > 0 && (
                 <div className="rounded-sm border border-accent-gold/30 bg-accent-gold/10 p-3">
                   <p className="font-sans text-[10px] uppercase tracking-[0.18em] text-ink-700/80 mb-2">
                     Thought Signatures
@@ -204,7 +252,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     ))}
                   </div>
                 </div>
-              )}
+              )} */}
 
               {streamNarrative.trim().length > 0 && (
                 <div className="rounded-sm border border-ink-900/10 bg-parchment-200/80 p-3">

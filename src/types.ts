@@ -34,6 +34,7 @@ export interface ChatMessage {
   role: "user" | "ai" | "system";
   content: string;
   timestamp: Date;
+  backgroundImage?: string;
 }
 
 export interface HistoryPoint {

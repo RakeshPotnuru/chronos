@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { axios } from "@/lib/axios-client";
 import {
@@ -8,12 +8,18 @@ import {
   AudioResponse,
   ChatMessage,
   HistoryPoint,
+  ImageResponse,
   SessionMetadata,
   SimulationResponse,
   SimulationSession,
   WorldState,
 } from "@/types";
 import { playAudio, playTickSound, stopAudio } from "@/utils/audio";
+import {
+  deleteSession as deleteSessionFromDB,
+  getSession,
+  saveSession,
+} from "@/utils/indexedDB";
 import { BookOpen } from "lucide-react";
 import ChatInterface from "./chat";
 import Deviations from "./deviations";
@@ -104,35 +110,61 @@ export default function App() {
     setSidebarOpen(false);
   };
 
-  const loadSession = (id: string) => {
-    const raw = localStorage.getItem(STORAGE_KEY_PREFIX + id);
-    if (raw) {
-      const data = JSON.parse(raw) as SimulationSession;
-      setCurrentSessionId(id);
-      setMessages(
-        data.messages.map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
-      );
-      setWorldState(data.world_state);
-      setHistoryPoints(data.history_points);
-      setSuggestedActions(data.suggested_actions);
-      setBackgroundImage(data.background_image);
-      setCabinetDebate(data.cabinet_debate ?? []);
-      setSelectedIntervention(data.selected_intervention ?? null);
-      setDecisionRationale(data.decision_rationale ?? null);
-      setSidebarOpen(false);
+  const loadSession = async (id: string) => {
+    try {
+      let data = (await getSession(id)) as SimulationSession | undefined;
+
+      if (!data) {
+        // Fallback/Migration from localStorage
+        const raw = localStorage.getItem(STORAGE_KEY_PREFIX + id);
+        if (raw) {
+          data = JSON.parse(raw) as SimulationSession;
+          // Migrate to DB
+          await saveSession(data);
+          localStorage.removeItem(STORAGE_KEY_PREFIX + id);
+        }
+      }
+
+      if (data) {
+        setCurrentSessionId(id);
+        setMessages(
+          data.messages.map((m) => ({
+            ...m,
+            timestamp: new Date(m.timestamp),
+          })),
+        );
+        setWorldState(data.world_state);
+        setHistoryPoints(data.history_points);
+        setSuggestedActions(data.suggested_actions);
+        setBackgroundImage(data.background_image);
+        setCabinetDebate(data.cabinet_debate ?? []);
+        setSelectedIntervention(data.selected_intervention ?? null);
+        setDecisionRationale(data.decision_rationale ?? null);
+        setSidebarOpen(false);
+      }
+    } catch (err) {
+      console.error("Failed to load session", err);
+      showNotification("Failed to load session");
     }
   };
 
-  const deleteSession = (e: React.MouseEvent, id: string) => {
+  const deleteSession = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const newList = sessions.filter((s) => s.id !== id);
-    setSessions(newList);
-    localStorage.setItem(METADATA_KEY, JSON.stringify(newList));
-    localStorage.removeItem(STORAGE_KEY_PREFIX + id);
-    showNotification("Archive entry deleted");
-    if (currentSessionId === id) {
-      if (newList.length > 0) loadSession(newList[0].id);
-      else createNewSession();
+    try {
+      const newList = sessions.filter((s) => s.id !== id);
+      setSessions(newList);
+      localStorage.setItem(METADATA_KEY, JSON.stringify(newList));
+
+      await deleteSessionFromDB(id);
+      localStorage.removeItem(STORAGE_KEY_PREFIX + id); // Just in case it's still there
+
+      showNotification("Archive entry deleted");
+      if (currentSessionId === id) {
+        if (newList.length > 0) loadSession(newList[0].id);
+        else createNewSession();
+      }
+    } catch (err) {
+      console.error("Failed to delete session", err);
     }
   };
 
@@ -163,10 +195,10 @@ export default function App() {
       decision_rationale: decisionRationale,
     };
 
-    localStorage.setItem(
-      STORAGE_KEY_PREFIX + currentSessionId,
-      JSON.stringify(sessionData),
-    );
+    // Save to IndexedDB
+    saveSession(sessionData).catch((err) => {
+      console.error("Failed to auto-save session", err);
+    });
 
     // Update metadata list
     const updatedSessions = sessions.map((s) =>
@@ -401,6 +433,29 @@ export default function App() {
     };
   };
 
+  const handleVisibleMessageIdChange = useCallback(
+    (id: string) => {
+      const index = messages.findIndex((m) => m.id === id);
+      if (index === -1) return;
+
+      let targetImage: string | null = null;
+      // Look backwards from the current message to find the last associated background image
+      for (let i = index; i >= 0; i--) {
+        if (messages[i].backgroundImage) {
+          targetImage = messages[i].backgroundImage!;
+          break;
+        }
+      }
+
+      if (targetImage) {
+        setBackgroundImage((prev) =>
+          prev === targetImage ? prev : targetImage,
+        );
+      }
+    },
+    [messages],
+  );
+
   const handleSendMessage = async (text: string) => {
     const newUserMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -498,20 +553,30 @@ export default function App() {
         .catch((e) => console.error(e))
         .finally(() => setIsGeneratingAudio(false));
 
-      // TODO: Re-enable image generation
-      // setIsGeneratingImage(true);
-      // axios
-      //   .post<ImageResponse>("/generate-image", {
-      //     scenario_description: turn.narrative,
-      //   })
-      //   .then(({ data }) => {
-      //     if (data.image) {
-      //       setBackgroundImage(data.image);
-      //       showNotification("World scenario updated");
-      //     }
-      //   })
-      //   .catch((e) => console.error(e))
-      //   .finally(() => setIsGeneratingImage(false));
+      setIsGeneratingImage(true);
+      axios
+        .post<ImageResponse>("/generate-image", {
+          scenario_description: turn.narrative,
+        })
+        .then(({ data }) => {
+          if (data.image) {
+            setMessages((prev) => {
+              const newMsgs = [...prev];
+              const lastMsg = newMsgs[newMsgs.length - 1];
+              if (lastMsg && lastMsg.role === "ai") {
+                newMsgs[newMsgs.length - 1] = {
+                  ...lastMsg,
+                  backgroundImage: data.image!,
+                };
+              }
+              return newMsgs;
+            });
+            setBackgroundImage(data.image);
+            showNotification("World scenario updated");
+          }
+        })
+        .catch((e) => console.error(e))
+        .finally(() => setIsGeneratingImage(false));
     } catch (err) {
       console.error(err);
       setError("Temporal sync failed. Try again.");
@@ -591,6 +656,7 @@ export default function App() {
               onToggleThoughtProcess={() =>
                 setShowThoughtProcess((prev) => !prev)
               }
+              onVisibleMessageIdChange={handleVisibleMessageIdChange}
             />
           </section>
 
