@@ -67,6 +67,7 @@ export default function App() {
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
 
   // --- INITIALIZATION ---
   useEffect(() => {
@@ -456,6 +457,25 @@ export default function App() {
     [messages],
   );
 
+  const handlePlayAudio = useCallback(
+    (audioData: string, messageId: string) => {
+      if (playingMessageId === messageId) {
+        stopAudio(audioSourceRef);
+        setPlayingMessageId(null);
+      } else {
+        setPlayingMessageId(messageId);
+        playAudio({
+          audioContextRef,
+          audioEnabled: true,
+          base64Data: audioData,
+          audioSourceRef,
+          onEnded: () => setPlayingMessageId(null),
+        });
+      }
+    },
+    [playingMessageId],
+  );
+
   const handleSendMessage = async (text: string) => {
     const newUserMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -542,13 +562,30 @@ export default function App() {
           narrative: turn.narrative,
         })
         .then(({ data }) => {
-          if (data.audio)
-            playAudio({
-              audioContextRef,
-              audioEnabled,
-              base64Data: data.audio,
-              audioSourceRef,
+          if (data.audio) {
+            setMessages((prev) => {
+              const newMsgs = [...prev];
+              const lastMsg = newMsgs[newMsgs.length - 1];
+              if (lastMsg && lastMsg.role === "ai") {
+                newMsgs[newMsgs.length - 1] = {
+                  ...lastMsg,
+                  audio: data.audio!,
+                };
+              }
+              return newMsgs;
             });
+
+            if (audioEnabled) {
+              setPlayingMessageId(newAiMsg.id);
+              playAudio({
+                audioContextRef,
+                audioEnabled,
+                base64Data: data.audio,
+                audioSourceRef,
+                onEnded: () => setPlayingMessageId(null),
+              });
+            }
+          }
         })
         .catch((e) => console.error(e))
         .finally(() => setIsGeneratingAudio(false));
@@ -657,6 +694,8 @@ export default function App() {
                 setShowThoughtProcess((prev) => !prev)
               }
               onVisibleMessageIdChange={handleVisibleMessageIdChange}
+              onPlayAudio={handlePlayAudio}
+              playingMessageId={playingMessageId}
             />
           </section>
 

@@ -11,7 +11,7 @@ export const base64ToUint8Array = (base64: string): Uint8Array => {
 export const playPCM = (
   pcmData: Uint8Array,
   audioContext: AudioContext,
-  sampleRate: number = 24000
+  sampleRate: number = 24000,
 ): AudioBufferSourceNode => {
   const numChannels = 1;
   // Gemini TTS/Audio usually returns 16-bit PCM
@@ -84,7 +84,7 @@ const playChaosAscending = (ctx: AudioContext) => {
 };
 
 export const stopAudio = (
-  audioSourceRef: React.RefObject<AudioBufferSourceNode | null>
+  audioSourceRef: React.RefObject<AudioBufferSourceNode | null>,
 ) => {
   if (audioSourceRef.current) {
     try {
@@ -101,11 +101,13 @@ export const playAudio = ({
   audioEnabled,
   base64Data,
   audioSourceRef,
+  onEnded,
 }: {
   base64Data: string;
   audioEnabled: boolean;
   audioContextRef: React.RefObject<AudioContext | null>;
   audioSourceRef: React.RefObject<AudioBufferSourceNode | null>;
+  onEnded?: () => void;
 }) => {
   if (!audioEnabled) return;
   const ctx = initAudio(audioContextRef);
@@ -117,5 +119,11 @@ export const playAudio = ({
     : base64Data;
 
   const pcmData = base64ToUint8Array(base64String);
-  audioSourceRef.current = playPCM(pcmData, ctx);
+  const source = playPCM(pcmData, ctx);
+
+  if (onEnded) {
+    source.onended = onEnded;
+  }
+
+  audioSourceRef.current = source;
 };

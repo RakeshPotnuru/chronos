@@ -35,6 +35,7 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   backgroundImage?: string;
+  audio?: string;
 }
 
 export interface HistoryPoint {

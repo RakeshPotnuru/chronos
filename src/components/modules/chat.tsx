@@ -1,5 +1,5 @@
 import { AdvisorOpinion, ChatMessage } from "@/types";
-import { Clock, Feather, Send } from "lucide-react";
+import { Clock, Feather, Send, Square, Volume2 } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import Markdown from "react-markdown";
 
@@ -20,6 +20,8 @@ interface ChatInterfaceProps {
   postThoughtSignatures: string[];
   onToggleThoughtProcess: () => void;
   onVisibleMessageIdChange?: (id: string) => void;
+  onPlayAudio: (audioData: string, messageId: string) => void;
+  playingMessageId: string | null;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -39,6 +41,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   postThoughtSignatures,
   onToggleThoughtProcess,
   onVisibleMessageIdChange,
+  onPlayAudio,
+  playingMessageId,
 }) => {
   const [inputText, setInputText] = React.useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -163,6 +167,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 ? "Divergence Point"
                 : "Historian Simulation"}
             </span>
+            {msg.audio && (
+              <button
+                onClick={() => onPlayAudio(msg.audio!, msg.id)}
+                className="mt-2 text-xs flex items-center gap-2 text-ink-700/60 hover:text-ink-900 transition-colors uppercase tracking-widest font-sans font-bold"
+              >
+                {playingMessageId === msg.id ? (
+                  <>
+                    <Square className="w-3 h-3 fill-current" /> Stop Narration
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-3 h-3" /> Play Narration
+                  </>
+                )}
+              </button>
+            )}
           </div>
         ))}
 
