@@ -136,7 +136,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[90dvh]">
+    <div className="flex flex-col h-[88dvh]">
       {/* Messages Area */}
       <div
         ref={containerRef}
