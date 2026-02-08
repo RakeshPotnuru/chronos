@@ -3,7 +3,7 @@ from fastapi import FastAPI, APIRouter
 from dotenv import load_dotenv
 import os
 from fastapi.middleware.cors import CORSMiddleware
-from api.routers import simulation_agent, image_agent, audio_agent, librarian_agent
+from api.routers import simulation_agent, image_agent, audio_agent, librarian_agent, marathon_agent
 
 load_dotenv(".env.local")
 
@@ -12,6 +12,7 @@ router.include_router(simulation_agent.router)
 router.include_router(image_agent.router)
 router.include_router(audio_agent.router)
 router.include_router(librarian_agent.router)
+router.include_router(marathon_agent.router)
 
 app = FastAPI(title=settings.PROJECT_NAME)
 

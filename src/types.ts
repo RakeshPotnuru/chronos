@@ -88,3 +88,63 @@ export interface FactCheckSegment {
 export interface FactCheckResponse {
   segments: FactCheckSegment[];
 }
+
+// Marathon Simulation Types
+export interface MarathonGoal {
+  description: string;
+  success_criteria: string;
+  target_year?: number;
+  optimization_metric?: "stability" | "chaos" | "peace";
+}
+
+export interface MarathonConfig {
+  goal: MarathonGoal;
+  max_steps: number;
+  checkpoint_interval: number;
+  auto_correct: boolean;
+  starting_divergence?: string;
+}
+
+export interface CheckpointEvaluation {
+  step_number: number;
+  progress_score: number;
+  on_track: boolean;
+  deviation_analysis: string;
+  recommended_correction?: string;
+}
+
+export interface MarathonStep {
+  step_number: number;
+  user_input: string;
+  simulation_response: SimulationResponse;
+  checkpoint?: CheckpointEvaluation;
+  correction_applied?: string;
+}
+
+export type MarathonStatus =
+  | "idle"
+  | "running"
+  | "paused"
+  | "completed"
+  | "failed";
+
+export interface MarathonSession {
+  id: string;
+  config: MarathonConfig;
+  status: MarathonStatus;
+  steps: MarathonStep[];
+  current_world_state?: WorldState | null;
+  final_evaluation?: string;
+  error_message?: string;
+}
+
+export interface GoalPreset {
+  description: string;
+  success_criteria: string;
+  target_year?: number;
+  optimization_metric?: "stability" | "chaos" | "peace";
+}
+
+export interface GoalPresetsResponse {
+  presets: Record<string, GoalPreset>;
+}

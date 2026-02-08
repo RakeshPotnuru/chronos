@@ -10,6 +10,8 @@ import {
   FactCheckResponse,
   HistoryPoint,
   ImageResponse,
+  MarathonConfig,
+  MarathonSession,
   SessionMetadata,
   SimulationResponse,
   SimulationSession,
@@ -26,6 +28,7 @@ import ChatInterface from "./chat";
 import Deviations from "./deviations";
 import Header from "./header";
 import History from "./history";
+import { MarathonConfigModal, MarathonProgress } from "./marathon";
 import Ruler from "./ruler";
 import Stats from "./stats";
 
@@ -77,6 +80,13 @@ export default function App() {
   const [isFactChecking, setIsFactChecking] = useState<Record<string, boolean>>(
     {},
   );
+
+  // Marathon State
+  const [marathonSession, setMarathonSession] =
+    useState<MarathonSession | null>(null);
+  const [isMarathonConfigOpen, setIsMarathonConfigOpen] = useState(false);
+  const [isExecutingMarathonStep, setIsExecutingMarathonStep] = useState(false);
+  const marathonIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // --- INITIALIZATION ---
   useEffect(() => {
@@ -565,64 +575,64 @@ export default function App() {
         },
       ]);
 
-      // setIsGeneratingAudio(true);
-      // axios
-      //   .post<AudioResponse>("/generate-audio", {
-      //     narrative: turn.narrative,
-      //   })
-      //   .then(({ data }) => {
-      //     if (data.audio) {
-      //       setMessages((prev) => {
-      //         const newMsgs = [...prev];
-      //         const lastMsg = newMsgs[newMsgs.length - 1];
-      //         if (lastMsg && lastMsg.role === "ai") {
-      //           newMsgs[newMsgs.length - 1] = {
-      //             ...lastMsg,
-      //             audio: data.audio!,
-      //           };
-      //         }
-      //         return newMsgs;
-      //       });
+      setIsGeneratingAudio(true);
+      axios
+        .post<AudioResponse>("/generate-audio", {
+          narrative: turn.narrative,
+        })
+        .then(({ data }) => {
+          if (data.audio) {
+            setMessages((prev) => {
+              const newMsgs = [...prev];
+              const lastMsg = newMsgs[newMsgs.length - 1];
+              if (lastMsg && lastMsg.role === "ai") {
+                newMsgs[newMsgs.length - 1] = {
+                  ...lastMsg,
+                  audio: data.audio!,
+                };
+              }
+              return newMsgs;
+            });
 
-      //       if (audioEnabled) {
-      //         setPlayingMessageId(newAiMsg.id);
-      //         playAudio({
-      //           audioContextRef,
-      //           audioEnabled,
-      //           base64Data: data.audio,
-      //           audioSourceRef,
-      //           onEnded: () => setPlayingMessageId(null),
-      //         });
-      //       }
-      //     }
-      //   })
-      //   .catch((e) => console.error(e))
-      //   .finally(() => setIsGeneratingAudio(false));
+            if (audioEnabled) {
+              setPlayingMessageId(newAiMsg.id);
+              playAudio({
+                audioContextRef,
+                audioEnabled,
+                base64Data: data.audio,
+                audioSourceRef,
+                onEnded: () => setPlayingMessageId(null),
+              });
+            }
+          }
+        })
+        .catch((e) => console.error(e))
+        .finally(() => setIsGeneratingAudio(false));
 
-      // setIsGeneratingImage(true);
-      // axios
-      //   .post<ImageResponse>("/generate-image", {
-      //     scenario_description: turn.narrative,
-      //   })
-      //   .then(({ data }) => {
-      //     if (data.image) {
-      //       setMessages((prev) => {
-      //         const newMsgs = [...prev];
-      //         const lastMsg = newMsgs[newMsgs.length - 1];
-      //         if (lastMsg && lastMsg.role === "ai") {
-      //           newMsgs[newMsgs.length - 1] = {
-      //             ...lastMsg,
-      //             backgroundImage: data.image!,
-      //           };
-      //         }
-      //         return newMsgs;
-      //       });
-      //       setBackgroundImage(data.image);
-      //       showNotification("World scenario updated");
-      //     }
-      //   })
-      //   .catch((e) => console.error(e))
-      //   .finally(() => setIsGeneratingImage(false));
+      setIsGeneratingImage(true);
+      axios
+        .post<ImageResponse>("/generate-image", {
+          scenario_description: turn.narrative,
+        })
+        .then(({ data }) => {
+          if (data.image) {
+            setMessages((prev) => {
+              const newMsgs = [...prev];
+              const lastMsg = newMsgs[newMsgs.length - 1];
+              if (lastMsg && lastMsg.role === "ai") {
+                newMsgs[newMsgs.length - 1] = {
+                  ...lastMsg,
+                  backgroundImage: data.image!,
+                };
+              }
+              return newMsgs;
+            });
+            setBackgroundImage(data.image);
+            showNotification("World scenario updated");
+          }
+        })
+        .catch((e) => console.error(e))
+        .finally(() => setIsGeneratingImage(false));
     } catch (err) {
       console.error(err);
       setError("Temporal sync failed. Try again.");
@@ -658,6 +668,118 @@ export default function App() {
       setIsFactChecking((prev) => ({ ...prev, [messageId]: false }));
     }
   };
+
+  // --- MARATHON HANDLERS ---
+  const handleStartMarathon = async (config: MarathonConfig) => {
+    try {
+      const response = await axios.post<MarathonSession>("/marathon/start", {
+        config,
+      });
+      setMarathonSession(response.data);
+      setIsMarathonConfigOpen(false);
+      showNotification("Marathon started!");
+
+      // Start executing steps
+      executeMarathonStepLoop(response.data);
+    } catch (err) {
+      console.error("Failed to start marathon:", err);
+      showNotification("Failed to start marathon");
+    }
+  };
+
+  const executeMarathonStepLoop = async (session: MarathonSession) => {
+    if (session.status !== "running") return;
+
+    setIsExecutingMarathonStep(true);
+
+    try {
+      const response = await axios.post<MarathonSession>("/marathon/step", {
+        session,
+      });
+
+      setMarathonSession(response.data);
+
+      // Update world state from the latest step
+      if (response.data.current_world_state) {
+        setWorldState(response.data.current_world_state);
+      }
+
+      // If still running, continue after a short delay
+      if (response.data.status === "running") {
+        marathonIntervalRef.current = setTimeout(() => {
+          executeMarathonStepLoop(response.data);
+        }, 1000);
+      } else {
+        setIsExecutingMarathonStep(false);
+        if (response.data.status === "completed") {
+          showNotification("Marathon completed!");
+        }
+      }
+    } catch (err) {
+      console.error("Marathon step failed:", err);
+      setIsExecutingMarathonStep(false);
+      if (marathonSession) {
+        setMarathonSession({ ...marathonSession, status: "failed" });
+      }
+    }
+  };
+
+  const handlePauseMarathon = async () => {
+    if (!marathonSession) return;
+
+    if (marathonIntervalRef.current) {
+      clearTimeout(marathonIntervalRef.current);
+    }
+
+    try {
+      const response = await axios.post<MarathonSession>(
+        "/marathon/pause",
+        marathonSession,
+      );
+      setMarathonSession(response.data);
+      setIsExecutingMarathonStep(false);
+      showNotification("Marathon paused");
+    } catch (err) {
+      console.error("Failed to pause marathon:", err);
+    }
+  };
+
+  const handleResumeMarathon = async () => {
+    if (!marathonSession) return;
+
+    try {
+      const response = await axios.post<MarathonSession>(
+        "/marathon/resume",
+        marathonSession,
+      );
+      setMarathonSession(response.data);
+      executeMarathonStepLoop(response.data);
+      showNotification("Marathon resumed");
+    } catch (err) {
+      console.error("Failed to resume marathon:", err);
+    }
+  };
+
+  const handleStopMarathon = () => {
+    if (marathonIntervalRef.current) {
+      clearTimeout(marathonIntervalRef.current);
+    }
+
+    if (marathonSession) {
+      setMarathonSession({ ...marathonSession, status: "completed" });
+    }
+    setIsExecutingMarathonStep(false);
+    showNotification("Marathon stopped");
+  };
+
+  // Cleanup marathon interval on unmount
+  useEffect(() => {
+    return () => {
+      if (marathonIntervalRef.current) {
+        clearTimeout(marathonIntervalRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="h-screen w-screen flex overflow-hidden relative">
@@ -695,6 +817,9 @@ export default function App() {
           audioEnabled={audioEnabled}
           audioSourceRef={audioSourceRef}
           setAudioEnabled={setAudioEnabled}
+          onMissionClick={() => setIsMarathonConfigOpen(true)}
+          isMissionRunning={marathonSession?.status === "running"}
+          missionDisabled={messages.length > 0}
         />
 
         {/* Content */}
@@ -760,6 +885,26 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* Marathon Progress Overlay */}
+      {marathonSession && marathonSession.status !== "idle" && (
+        <div className="absolute bottom-4 right-4 z-40 max-w-md w-full">
+          <MarathonProgress
+            session={marathonSession}
+            onPause={handlePauseMarathon}
+            onResume={handleResumeMarathon}
+            onStop={handleStopMarathon}
+            isExecutingStep={isExecutingMarathonStep}
+          />
+        </div>
+      )}
+
+      {/* Marathon Config Modal */}
+      <MarathonConfigModal
+        isOpen={isMarathonConfigOpen}
+        onClose={() => setIsMarathonConfigOpen(false)}
+        onStartMarathon={handleStartMarathon}
+      />
     </div>
   );
 }

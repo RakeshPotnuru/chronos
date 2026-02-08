@@ -8,6 +8,7 @@ import {
   Timer,
   Volume2,
   VolumeX,
+  Zap,
 } from "lucide-react";
 import YearOdometer from "./year-odometer";
 
@@ -20,6 +21,9 @@ interface HeaderProps {
   audioEnabled: boolean;
   setAudioEnabled: (enabled: boolean) => void;
   audioSourceRef: React.RefObject<AudioBufferSourceNode | null>;
+  onMissionClick?: () => void;
+  isMissionRunning?: boolean;
+  missionDisabled?: boolean;
 }
 
 export default function Header({
@@ -31,6 +35,9 @@ export default function Header({
   audioEnabled,
   setAudioEnabled,
   audioSourceRef,
+  onMissionClick,
+  isMissionRunning,
+  missionDisabled,
 }: HeaderProps) {
   return (
     <header className="bg-transparent p-4 flex items-center justify-between z-10">
@@ -92,6 +99,29 @@ export default function Header({
           ) : (
             <VolumeX className="w-5 h-5" />
           )}
+        </button>
+
+        {/* Mission Button */}
+        <button
+          onClick={onMissionClick}
+          disabled={missionDisabled && !isMissionRunning}
+          className={`p-2 rounded transition-colors flex items-center gap-2 ${
+            isMissionRunning
+              ? "text-green-400 bg-ink-900 animate-pulse"
+              : missionDisabled
+                ? "text-ink-900/30 bg-ink-900/10 cursor-not-allowed"
+                : "text-accent-gold bg-ink-900 hover:bg-ink-800"
+          }`}
+          title={
+            missionDisabled && !isMissionRunning
+              ? "Missions available in new chats only"
+              : "Start Autonomous Mission"
+          }
+        >
+          <Zap className="w-5 h-5" />
+          <span className="text-xs font-bold uppercase tracking-wider hidden md:inline">
+            {isMissionRunning ? "Running" : "Mission"}
+          </span>
         </button>
       </div>
     </header>
