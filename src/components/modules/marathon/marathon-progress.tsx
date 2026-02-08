@@ -13,8 +13,10 @@ import {
   Square,
   Target,
   Zap,
+  VolumeX,
+  Volume2,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface MarathonProgressProps {
   session: MarathonSession;
@@ -32,6 +34,8 @@ export default function MarathonProgress({
   isExecutingStep,
 }: MarathonProgressProps) {
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+  const [playingAudioStep, setPlayingAudioStep] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const toggleStep = (stepNumber: number) => {
     setExpandedSteps((prev) => {
@@ -77,6 +81,31 @@ export default function MarathonProgress({
         return <AlertTriangle className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const toggleAudio = (stepNumber: number, audioData?: string) => {
+    if (!audioData) return;
+
+    if (playingAudioStep === stepNumber) {
+      // Stop audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      setPlayingAudioStep(null);
+    } else {
+      // Stop any currently playing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+
+      // Play new audio
+      const audio = new Audio(audioData);
+      audio.onended = () => setPlayingAudioStep(null);
+      audio.play();
+      audioRef.current = audio;
+      setPlayingAudioStep(stepNumber);
     }
   };
 
@@ -228,6 +257,17 @@ export default function MarathonProgress({
 
               {expandedSteps.has(step.step_number) && (
                 <div className="px-4 py-3 bg-ink-800/30 text-sm space-y-3">
+                  {/* Background Image */}
+                  {step.background_image && (
+                    <div className="rounded overflow-hidden border border-accent-gold/20">
+                      <img
+                        src={step.background_image}
+                        alt={`Step ${step.step_number} visualization`}
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
+                  )}
+
                   <div>
                     <div className="text-xs text-parchment-100/50 uppercase tracking-wider mb-1">
                       Intervention
@@ -235,8 +275,33 @@ export default function MarathonProgress({
                     <p className="text-parchment-100/80">{step.user_input}</p>
                   </div>
                   <div>
-                    <div className="text-xs text-parchment-100/50 uppercase tracking-wider mb-1">
-                      Outcome
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-xs text-parchment-100/50 uppercase tracking-wider">
+                        Outcome
+                      </div>
+                      {step.audio_data && (
+                        <button
+                          onClick={() =>
+                            toggleAudio(step.step_number, step.audio_data)
+                          }
+                          className={`p-1 rounded transition-colors ${
+                            playingAudioStep === step.step_number
+                              ? "bg-accent-gold/20 text-accent-gold"
+                              : "bg-ink-700/50 text-parchment-100/50 hover:text-accent-gold"
+                          }`}
+                          title={
+                            playingAudioStep === step.step_number
+                              ? "Stop audio"
+                              : "Play narration"
+                          }
+                        >
+                          {playingAudioStep === step.step_number ? (
+                            <VolumeX className="w-3 h-3" />
+                          ) : (
+                            <Volume2 className="w-3 h-3" />
+                          )}
+                        </button>
+                      )}
                     </div>
                     <p className="text-parchment-100/80 line-clamp-3">
                       {step.simulation_response.narrative.slice(0, 200)}...

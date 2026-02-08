@@ -3,6 +3,7 @@ import { WorldState } from "@/types";
 import { stopAudio } from "@/utils/audio";
 import {
   ChevronLeftIcon,
+  Film,
   HistoryIcon,
   ImageIcon,
   Timer,
@@ -24,6 +25,9 @@ interface HeaderProps {
   onMissionClick?: () => void;
   isMissionRunning?: boolean;
   missionDisabled?: boolean;
+  onMovieMakerClick?: () => void;
+  movieMakerDisabled?: boolean;
+  messageCount?: number;
 }
 
 export default function Header({
@@ -38,6 +42,9 @@ export default function Header({
   onMissionClick,
   isMissionRunning,
   missionDisabled,
+  onMovieMakerClick,
+  movieMakerDisabled,
+  messageCount = 0,
 }: HeaderProps) {
   return (
     <header className="bg-transparent p-4 flex items-center justify-between z-10">
@@ -121,6 +128,27 @@ export default function Header({
           <Zap className="w-5 h-5" />
           <span className="text-xs font-bold uppercase tracking-wider hidden md:inline">
             {isMissionRunning ? "Running" : "Mission"}
+          </span>
+        </button>
+
+        {/* Movie Maker Button */}
+        <button
+          onClick={onMovieMakerClick}
+          disabled={movieMakerDisabled}
+          className={`p-2 rounded transition-colors flex items-center gap-2 ${
+            movieMakerDisabled
+              ? "text-ink-900/30 bg-ink-900/10 cursor-not-allowed"
+              : "text-accent-gold bg-ink-900 hover:bg-ink-800"
+          }`}
+          title={
+            movieMakerDisabled
+              ? "Movie Maker unlocks after one conversation"
+              : "Generate Cinematic Video Prompt"
+          }
+        >
+          <Film className="w-5 h-5" />
+          <span className="text-xs font-bold uppercase tracking-wider hidden md:inline">
+            Movie
           </span>
         </button>
       </div>

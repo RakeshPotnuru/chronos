@@ -119,6 +119,8 @@ export interface MarathonStep {
   simulation_response: SimulationResponse;
   checkpoint?: CheckpointEvaluation;
   correction_applied?: string;
+  background_image?: string;
+  audio_data?: string;
 }
 
 export type MarathonStatus =
@@ -147,4 +149,32 @@ export interface GoalPreset {
 
 export interface GoalPresetsResponse {
   presets: Record<string, GoalPreset>;
+}
+
+export type VideoStyle =
+  | "cinematic"
+  | "documentary"
+  | "vintage"
+  | "dramatic"
+  | "historical";
+export type VideoDuration = "short" | "medium" | "long";
+export type VideoMotion = "static" | "slow" | "dynamic";
+
+export interface VideoPromptConfig {
+  style: VideoStyle;
+  duration: VideoDuration;
+  motion: VideoMotion;
+  include_text_overlay: boolean;
+  include_voiceover: boolean;
+  focus_on_emotion: boolean;
+}
+
+export interface VideoPromptRequest {
+  conversation_history: { role: string; content: string }[];
+  config: VideoPromptConfig;
+}
+
+export interface VideoPromptResponse {
+  video_prompt: string | null;
+  metadata: Record<string, any>;
 }

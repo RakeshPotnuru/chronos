@@ -29,6 +29,7 @@ import Deviations from "./deviations";
 import Header from "./header";
 import History from "./history";
 import { MarathonConfigModal, MarathonProgress } from "./marathon";
+import MovieMakerModal from "./movie-maker-modal";
 import Ruler from "./ruler";
 import Stats from "./stats";
 
@@ -87,6 +88,9 @@ export default function App() {
   const [isMarathonConfigOpen, setIsMarathonConfigOpen] = useState(false);
   const [isExecutingMarathonStep, setIsExecutingMarathonStep] = useState(false);
   const marathonIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Movie Maker State
+  const [isMovieMakerOpen, setIsMovieMakerOpen] = useState(false);
 
   // --- INITIALIZATION ---
   useEffect(() => {
@@ -820,6 +824,9 @@ export default function App() {
           onMissionClick={() => setIsMarathonConfigOpen(true)}
           isMissionRunning={marathonSession?.status === "running"}
           missionDisabled={messages.length > 0}
+          onMovieMakerClick={() => setIsMovieMakerOpen(true)}
+          movieMakerDisabled={messages.length < 2}
+          messageCount={messages.length}
         />
 
         {/* Content */}
@@ -904,6 +911,13 @@ export default function App() {
         isOpen={isMarathonConfigOpen}
         onClose={() => setIsMarathonConfigOpen(false)}
         onStartMarathon={handleStartMarathon}
+      />
+
+      {/* Movie Maker Modal */}
+      <MovieMakerModal
+        isOpen={isMovieMakerOpen}
+        onClose={() => setIsMovieMakerOpen(false)}
+        messages={messages}
       />
     </div>
   );

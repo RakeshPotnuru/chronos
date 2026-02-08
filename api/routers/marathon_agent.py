@@ -346,6 +346,32 @@ def execute_marathon_step(request: MarathonStepRequest):
             simulation_response=sim_response,
         )
         
+        # Generate background image for this step
+        try:
+            from api.routers.image_agent import generate_scenario_image
+            from api.models import ImageRequest
+            
+            image_response = generate_scenario_image(
+                ImageRequest(scenario_description=sim_response.narrative[:500])
+            )
+            if image_response.image:
+                new_step.background_image = image_response.image
+        except Exception as e:
+            print(f"Image generation failed for step {step_number}: {e}")
+        
+        # Generate audio narration for this step
+        try:
+            from api.routers.audio_agent import generate_scenario_audio
+            from api.models import AudioRequest
+            
+            audio_response = generate_scenario_audio(
+                AudioRequest(narrative=sim_response.narrative[:300])
+            )
+            if audio_response.audio:
+                new_step.audio_data = audio_response.audio
+        except Exception as e:
+            print(f"Audio generation failed for step {step_number}: {e}")
+        
         # Check if this is a checkpoint
         if step_number % session.config.checkpoint_interval == 0:
             checkpoint = _evaluate_checkpoint(

@@ -68,3 +68,19 @@ class FactCheckSegment(BaseModel):
 
 class FactCheckResponse(BaseModel):
     segments: List[FactCheckSegment]
+
+class VideoPromptConfig(BaseModel):
+    style: Literal["cinematic", "documentary", "vintage", "dramatic", "historical"] = "cinematic"
+    duration: Literal["short", "medium", "long"] = "medium"
+    motion: Literal["static", "slow", "dynamic"] = "slow"
+    include_text_overlay: bool = False
+    include_voiceover: bool = True
+    focus_on_emotion: bool = False
+
+class VideoPromptRequest(BaseModel):
+    conversation_history: List[dict]
+    config: VideoPromptConfig = Field(default_factory=VideoPromptConfig)
+
+class VideoPromptResponse(BaseModel):
+    video_prompt: Optional[str] = None
+    metadata: dict = Field(default_factory=dict)
