@@ -335,12 +335,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   </p>
                   <div className="space-y-2 max-h-28 overflow-auto custom-scrollbar pr-1">
                     {streamThoughts.map((thought, idx) => (
-                      <p
-                        key={`${thought.slice(0, 16)}-${idx}`}
-                        className="font-serif text-xs text-ink-800/90 leading-relaxed"
-                      >
+                      <Markdown key={`${thought.slice(0, 16)}-${idx}`}>
                         {thought}
-                      </p>
+                      </Markdown>
                     ))}
                   </div>
                 </div>
