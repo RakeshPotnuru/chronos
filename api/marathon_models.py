@@ -75,8 +75,6 @@ class MarathonStep(BaseModel):
     simulation_response: SimulationResponse
     checkpoint: Optional[CheckpointEvaluation] = None
     correction_applied: Optional[str] = None
-    background_image: Optional[str] = None  # Base64 data URL
-    audio_data: Optional[str] = None  # Base64 data URL
 
 
 class MarathonSession(BaseModel):

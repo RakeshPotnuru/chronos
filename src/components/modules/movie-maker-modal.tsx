@@ -1,8 +1,10 @@
+import { axios } from "@/lib/axios-client";
 import {
   ChatMessage,
   VideoDuration,
   VideoMotion,
   VideoPromptConfig,
+  VideoPromptResponse,
   VideoStyle,
 } from "@/types";
 import { Copy, Film, Loader2, Settings, X } from "lucide-react";
@@ -46,18 +48,13 @@ const MovieMakerModal: React.FC<MovieMakerModalProps> = ({
         content: msg.content,
       }));
 
-      const response = await fetch("/api/generate-video-prompt", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const { data } = await axios.post<VideoPromptResponse>(
+        "/generate-video-prompt",
+        {
           conversation_history: conversationHistory,
           config,
-        }),
-      });
-
-      const data = await response.json();
+        },
+      );
 
       if (data.video_prompt) {
         setGeneratedPrompt(data.video_prompt);

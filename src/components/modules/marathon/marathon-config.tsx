@@ -1,14 +1,8 @@
 "use client";
 
-import { axios } from "@/lib/axios-client";
-import {
-  GoalPreset,
-  GoalPresetsResponse,
-  MarathonConfig,
-  MarathonGoal,
-} from "@/types";
+import { GoalPreset, MarathonConfig, MarathonGoal } from "@/types";
 import { Clock, Play, RefreshCw, Settings, Target, X, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface MarathonConfigModalProps {
   isOpen: boolean;
@@ -22,12 +16,57 @@ const OPTIMIZATION_OPTIONS = [
   { value: "chaos", label: "Embrace Chaos", icon: "🌀" },
 ];
 
+const GOAL_PRESETS: Record<string, GoalPreset> = {
+  prevent_wwi: {
+    description: "Prevent World War I",
+    success_criteria:
+      "No major European war by 1920, Archduke Franz Ferdinand survives or diplomatic channels prevent escalation",
+    target_year: 1920,
+    optimization_metric: "peace",
+  },
+  maximize_stability: {
+    description: "Maximize global stability by 1950",
+    success_criteria:
+      "Geopolitical stability above 70%, minimal chaos level, no world wars",
+    target_year: 1950,
+    optimization_metric: "stability",
+  },
+  prevent_wwii: {
+    description: "Prevent World War II",
+    success_criteria:
+      "No major global conflict by 1945, Nazi Germany does not rise to power or is contained diplomatically",
+    target_year: 1945,
+    optimization_metric: "peace",
+  },
+  cold_war_resolution: {
+    description: "Peacefully resolve the Cold War by 1970",
+    success_criteria:
+      "US-Soviet tensions de-escalate, no nuclear standoffs, cooperation frameworks established",
+    target_year: 1970,
+    optimization_metric: "peace",
+  },
+  accelerate_technology: {
+    description: "Accelerate technological progress",
+    success_criteria:
+      "Major technological breakthroughs happen earlier, space exploration advanced, computing revolution accelerated",
+    target_year: 2000,
+    optimization_metric: "stability",
+  },
+  prevent_2008_financial_crisis: {
+    description: "Prevent the 2008 financial crisis",
+    success_criteria:
+      "No major financial crisis by 2008, Lehman Brothers does not collapse or is bailed out",
+    target_year: 2008,
+    optimization_metric: "stability",
+  },
+};
+
 export default function MarathonConfigModal({
   isOpen,
   onClose,
   onStartMarathon,
 }: MarathonConfigModalProps) {
-  const [presets, setPresets] = useState<Record<string, GoalPreset>>({});
+  const [presets] = useState<Record<string, GoalPreset>>(GOAL_PRESETS);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [customGoal, setCustomGoal] = useState<MarathonGoal>({
     description: "",
@@ -39,23 +78,6 @@ export default function MarathonConfigModal({
   const [checkpointInterval, setCheckpointInterval] = useState(3);
   const [autoCorrect, setAutoCorrect] = useState(true);
   const [startingDivergence, setStartingDivergence] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      loadPresets();
-    }
-  }, [isOpen]);
-
-  const loadPresets = async () => {
-    try {
-      const response =
-        await axios.get<GoalPresetsResponse>("/marathon/presets");
-      setPresets(response.data.presets);
-    } catch (err) {
-      console.error("Failed to load presets:", err);
-    }
-  };
 
   const handlePresetSelect = (presetKey: string) => {
     setSelectedPreset(presetKey);
