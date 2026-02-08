@@ -7,6 +7,7 @@ import {
   AdvisorOpinion,
   AudioResponse,
   ChatMessage,
+  FactCheckResponse,
   HistoryPoint,
   ImageResponse,
   SessionMetadata,
@@ -68,6 +69,14 @@ export default function App() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+
+  // Fact Check State
+  const [factCheckData, setFactCheckData] = useState<
+    Record<string, FactCheckResponse | null>
+  >({});
+  const [isFactChecking, setIsFactChecking] = useState<Record<string, boolean>>(
+    {},
+  );
 
   // --- INITIALIZATION ---
   useEffect(() => {
@@ -556,64 +565,64 @@ export default function App() {
         },
       ]);
 
-      setIsGeneratingAudio(true);
-      axios
-        .post<AudioResponse>("/generate-audio", {
-          narrative: turn.narrative,
-        })
-        .then(({ data }) => {
-          if (data.audio) {
-            setMessages((prev) => {
-              const newMsgs = [...prev];
-              const lastMsg = newMsgs[newMsgs.length - 1];
-              if (lastMsg && lastMsg.role === "ai") {
-                newMsgs[newMsgs.length - 1] = {
-                  ...lastMsg,
-                  audio: data.audio!,
-                };
-              }
-              return newMsgs;
-            });
+      // setIsGeneratingAudio(true);
+      // axios
+      //   .post<AudioResponse>("/generate-audio", {
+      //     narrative: turn.narrative,
+      //   })
+      //   .then(({ data }) => {
+      //     if (data.audio) {
+      //       setMessages((prev) => {
+      //         const newMsgs = [...prev];
+      //         const lastMsg = newMsgs[newMsgs.length - 1];
+      //         if (lastMsg && lastMsg.role === "ai") {
+      //           newMsgs[newMsgs.length - 1] = {
+      //             ...lastMsg,
+      //             audio: data.audio!,
+      //           };
+      //         }
+      //         return newMsgs;
+      //       });
 
-            if (audioEnabled) {
-              setPlayingMessageId(newAiMsg.id);
-              playAudio({
-                audioContextRef,
-                audioEnabled,
-                base64Data: data.audio,
-                audioSourceRef,
-                onEnded: () => setPlayingMessageId(null),
-              });
-            }
-          }
-        })
-        .catch((e) => console.error(e))
-        .finally(() => setIsGeneratingAudio(false));
+      //       if (audioEnabled) {
+      //         setPlayingMessageId(newAiMsg.id);
+      //         playAudio({
+      //           audioContextRef,
+      //           audioEnabled,
+      //           base64Data: data.audio,
+      //           audioSourceRef,
+      //           onEnded: () => setPlayingMessageId(null),
+      //         });
+      //       }
+      //     }
+      //   })
+      //   .catch((e) => console.error(e))
+      //   .finally(() => setIsGeneratingAudio(false));
 
-      setIsGeneratingImage(true);
-      axios
-        .post<ImageResponse>("/generate-image", {
-          scenario_description: turn.narrative,
-        })
-        .then(({ data }) => {
-          if (data.image) {
-            setMessages((prev) => {
-              const newMsgs = [...prev];
-              const lastMsg = newMsgs[newMsgs.length - 1];
-              if (lastMsg && lastMsg.role === "ai") {
-                newMsgs[newMsgs.length - 1] = {
-                  ...lastMsg,
-                  backgroundImage: data.image!,
-                };
-              }
-              return newMsgs;
-            });
-            setBackgroundImage(data.image);
-            showNotification("World scenario updated");
-          }
-        })
-        .catch((e) => console.error(e))
-        .finally(() => setIsGeneratingImage(false));
+      // setIsGeneratingImage(true);
+      // axios
+      //   .post<ImageResponse>("/generate-image", {
+      //     scenario_description: turn.narrative,
+      //   })
+      //   .then(({ data }) => {
+      //     if (data.image) {
+      //       setMessages((prev) => {
+      //         const newMsgs = [...prev];
+      //         const lastMsg = newMsgs[newMsgs.length - 1];
+      //         if (lastMsg && lastMsg.role === "ai") {
+      //           newMsgs[newMsgs.length - 1] = {
+      //             ...lastMsg,
+      //             backgroundImage: data.image!,
+      //           };
+      //         }
+      //         return newMsgs;
+      //       });
+      //       setBackgroundImage(data.image);
+      //       showNotification("World scenario updated");
+      //     }
+      //   })
+      //   .catch((e) => console.error(e))
+      //   .finally(() => setIsGeneratingImage(false));
     } catch (err) {
       console.error(err);
       setError("Temporal sync failed. Try again.");
@@ -623,6 +632,30 @@ export default function App() {
       setStreamThoughts([]);
       setThoughtSignatures([]);
       setIsLoading(false);
+    }
+  };
+
+  const handleFactCheck = async (messageId: string, narrative: string) => {
+    if (factCheckData[messageId] || isFactChecking[messageId]) return;
+
+    setIsFactChecking((prev) => ({ ...prev, [messageId]: true }));
+
+    try {
+      const response = await axios.post<FactCheckResponse>("/fact-check", {
+        narrative,
+        year: worldState?.year || 2024,
+      });
+
+      setFactCheckData((prev) => ({
+        ...prev,
+        [messageId]: response.data,
+      }));
+      showNotification("Historical verification complete");
+    } catch (err) {
+      console.error("Fact check failed", err);
+      showNotification("Fact check unavailable");
+    } finally {
+      setIsFactChecking((prev) => ({ ...prev, [messageId]: false }));
     }
   };
 
@@ -696,6 +729,9 @@ export default function App() {
               onVisibleMessageIdChange={handleVisibleMessageIdChange}
               onPlayAudio={handlePlayAudio}
               playingMessageId={playingMessageId}
+              factCheckData={factCheckData}
+              isFactChecking={isFactChecking}
+              onFactCheck={handleFactCheck}
             />
           </section>
 

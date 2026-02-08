@@ -1,5 +1,16 @@
-import { AdvisorOpinion, ChatMessage } from "@/types";
-import { Clock, Feather, Send, Square, Volume2 } from "lucide-react";
+import { AdvisorOpinion, ChatMessage, FactCheckResponse } from "@/types";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Feather,
+  Loader2,
+  Search,
+  Send,
+  ShieldCheck,
+  Square,
+  Volume2,
+} from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import Markdown from "react-markdown";
 
@@ -22,6 +33,9 @@ interface ChatInterfaceProps {
   onVisibleMessageIdChange?: (id: string) => void;
   onPlayAudio: (audioData: string, messageId: string) => void;
   playingMessageId: string | null;
+  factCheckData: Record<string, FactCheckResponse | null>;
+  isFactChecking: Record<string, boolean>;
+  onFactCheck: (messageId: string, narrative: string) => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -43,6 +57,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onVisibleMessageIdChange,
   onPlayAudio,
   playingMessageId,
+  factCheckData,
+  isFactChecking,
+  onFactCheck,
 }) => {
   const [inputText, setInputText] = React.useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -152,9 +169,81 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   : "bg-parchment-100 border-parchment-800/30 text-ink-900 rounded-bl-none"
               }`}
             >
-              <p className="font-serif text-lg leading-relaxed whitespace-pre-wrap">
-                {msg.content}
-              </p>
+              <div className="font-serif text-lg leading-relaxed whitespace-pre-wrap relative">
+                {factCheckData[msg.id] ? (
+                  <div>
+                    {factCheckData[msg.id]?.segments.map((segment, idx) => (
+                      <span
+                        key={idx}
+                        className={`transition-colors duration-500 ${
+                          segment.classification === "verified"
+                            ? "bg-green-100/50 text-green-900 decoration-green-500/30 underline decoration-2 underline-offset-2"
+                            : segment.classification === "divergent"
+                              ? "bg-purple-100/50 text-purple-900 decoration-purple-500/30 underline decoration-2 underline-offset-2"
+                              : ""
+                        }`}
+                        title={
+                          segment.classification === "divergent" &&
+                          segment.real_history_context
+                            ? `Real History: ${segment.real_history_context}`
+                            : segment.classification === "verified"
+                              ? "Verified Historical Fact"
+                              : undefined
+                        }
+                      >
+                        {segment.text}
+                      </span>
+                    ))}
+                    <div className="mt-4 pt-3 border-t border-ink-900/10 text-sm font-sans flex gap-4">
+                      <div className="flex items-center gap-1.5 text-green-700">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="uppercase tracking-wider text-xs font-bold">
+                          Real History
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-purple-700">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span className="uppercase tracking-wider text-xs font-bold">
+                          Simulation
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  msg.content
+                )}
+                {msg.role === "ai" && (
+                  <button
+                    onClick={() => onFactCheck(msg.id, msg.content)}
+                    disabled={isFactChecking[msg.id] || !!factCheckData[msg.id]}
+                    className={`
+                            flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded transition-colors bg-ink-900 mt-2
+                            ${
+                              factCheckData[msg.id]
+                                ? "text-green-400 cursor-default"
+                                : isFactChecking[msg.id]
+                                  ? "text-accent-gold/50 cursor-wait"
+                                  : "text-accent-gold hover:text-accent-gold/80"
+                            }
+                        `}
+                  >
+                    {isFactChecking[msg.id] ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                        Verifying...
+                      </>
+                    ) : factCheckData[msg.id] ? (
+                      <>
+                        <ShieldCheck className="w-3 h-3" /> Verified
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-3 h-3" /> Reality Toggle
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
 
               {/* Decorative corner accents */}
               <div className="absolute top-0.5 left-0.5 w-2 h-2 border-t border-l border-ink-900/10"></div>
@@ -162,11 +251,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <div className="absolute bottom-0.5 left-0.5 w-2 h-2 border-b border-l border-ink-900/10"></div>
               <div className="absolute bottom-0.5 right-0.5 w-2 h-2 border-b border-r border-ink-900/10"></div>
             </div>
-            <span className="text-xs text-parchment-200 mt-1 font-sans font-bold uppercase tracking-wider opacity-70">
-              {msg.role === "user"
-                ? "Divergence Point"
-                : "Historian Simulation"}
-            </span>
+            <div className="flex items-center justify-between mt-1 opacity-70">
+              <span className="text-xs text-parchment-200 font-sans font-bold uppercase tracking-wider">
+                {msg.role === "user"
+                  ? "Divergence Point"
+                  : "Historian Simulation"}
+              </span>
+            </div>
             {msg.audio && (
               <button
                 onClick={() => onPlayAudio(msg.audio!, msg.id)}

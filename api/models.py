@@ -56,3 +56,15 @@ class AudioRequest(BaseModel):
 
 class AudioResponse(BaseModel):
     audio: str | None = None
+
+class FactCheckRequest(BaseModel):
+    narrative: str
+    year: int
+
+class FactCheckSegment(BaseModel):
+    text: str
+    classification: Literal["verified", "divergent", "plausible"]
+    real_history_context: Optional[str] = None
+
+class FactCheckResponse(BaseModel):
+    segments: List[FactCheckSegment]

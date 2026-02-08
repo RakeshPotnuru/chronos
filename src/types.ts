@@ -78,3 +78,13 @@ export interface ImageResponse {
 export interface AudioResponse {
   audio: string | null;
 }
+
+export interface FactCheckSegment {
+  text: string;
+  classification: "verified" | "divergent" | "plausible";
+  real_history_context?: string; // For divergent items
+}
+
+export interface FactCheckResponse {
+  segments: FactCheckSegment[];
+}
